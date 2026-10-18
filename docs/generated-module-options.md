@@ -266,6 +266,51 @@ one of “without”, “auto”, “manual”
 
 
 
+## services\.comin\.deploymentAttemptsLimit
+
+
+
+Maximum number of deployment attempts (including the first
+one) before comin reports a deployment failure\. When set to
+a value lower than or equal to 1, comin does not retry
+failed deployments\.
+
+
+
+*Type:*
+signed integer
+
+
+
+*Default:*
+
+```nix
+2
+```
+
+
+
+## services\.comin\.deploymentRetryTimer
+
+
+
+Duration in seconds between each deployment retry attempt\.
+
+
+
+*Type:*
+signed integer
+
+
+
+*Default:*
+
+```nix
+30
+```
+
+
+
 ## services\.comin\.desktop\.enable
 
 

@@ -5,6 +5,8 @@ services.comin = {
   enable = true;
   evalTimeout = 600; # 10 minutes
   buildTimeout = 7200; # 2 hours
+  deploymentAttemptsLimit = 3; # try deployment up to 3 times
+  deploymentRetryTimer = 30; # 30 second interval between retries
   remotes = [
     {
       name = "origin";

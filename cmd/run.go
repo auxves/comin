@@ -110,7 +110,7 @@ var runCmd = &cobra.Command{
 		sched.FetchRemotes(fetcher, cfg.Remotes)
 
 		builder := builder.New(store, executor, broker, gitConfig.Path, gitConfig.Dir, cfg.SystemAttr, cfg.Hostname, gitConfig.Submodules, time.Duration(cfg.EvalTimeout)*time.Second, time.Duration(cfg.BuildTimeout)*time.Second, cfg.BuildAttemptsLimit, time.Duration(cfg.BuildRetryTimer)*time.Second, cfg.PostBuildCommand)
-		deployer := deployer.New(store, executor.Deploy, lastDeployment, cfg.PostDeploymentCommand, broker)
+		deployer := deployer.New(store, executor.Deploy, lastDeployment, cfg.PostDeploymentCommand, broker, cfg.DeploymentAttemptsLimit, time.Duration(cfg.DeploymentRetryTimer)*time.Second)
 
 		mode, err := manager.ParseMode(cfg.BuildConfirmer.Mode)
 		if err != nil {

@@ -75,23 +75,25 @@ type Configuration struct {
 	StateDir      string `yaml:"state_dir"`
 	StateFilepath string `yaml:"state_filepath"`
 	// RepositoryType describes type of the repository. It can currently only be "flake"
-	RepositoryType        string     `yaml:"repository_type"`
-	RepositorySubdir      string     `yaml:"repository_subdir"`
-	Submodules            bool       `yaml:"submodules"`
-	SystemAttr            string     `yaml:"system_attr"`
-	Remotes               []Remote   `yaml:"remotes"`
-	ApiServer             HttpServer `yaml:"api_server"`
-	Grpc                  Grpc       `yaml:"grpc"`
-	Exporter              HttpServer `yaml:"exporter"`
-	GpgPublicKeyPaths     []string   `yaml:"gpg_public_key_paths"`
-	SshAllowedSignersPath string     `yaml:"ssh_allowed_signers_path"`
-	PostDeploymentCommand string     `yaml:"post_deployment_command"`
-	PostBuildCommand      string     `yaml:"post_build_command"`
-	BuildConfirmer        Confirmer  `yaml:"build_confirmer"`
-	DeployConfirmer       Confirmer  `yaml:"deploy_confirmer"`
-	Retention             Retention  `yaml:"retention"`
-	EvalTimeout           int        `yaml:"eval_timeout"`
-	BuildTimeout          int        `yaml:"build_timeout"`
-	BuildAttemptsLimit    int        `yaml:"build_attempts_limit"`
-	BuildRetryTimer       int        `yaml:"build_retry_timer"`
+	RepositoryType          string     `yaml:"repository_type"`
+	RepositorySubdir        string     `yaml:"repository_subdir"`
+	Submodules              bool       `yaml:"submodules"`
+	SystemAttr              string     `yaml:"system_attr"`
+	Remotes                 []Remote   `yaml:"remotes"`
+	ApiServer               HttpServer `yaml:"api_server"`
+	Grpc                    Grpc       `yaml:"grpc"`
+	Exporter                HttpServer `yaml:"exporter"`
+	GpgPublicKeyPaths       []string   `yaml:"gpg_public_key_paths"`
+	SshAllowedSignersPath   string     `yaml:"ssh_allowed_signers_path"`
+	PostDeploymentCommand   string     `yaml:"post_deployment_command"`
+	PostBuildCommand        string     `yaml:"post_build_command"`
+	BuildConfirmer          Confirmer  `yaml:"build_confirmer"`
+	DeployConfirmer         Confirmer  `yaml:"deploy_confirmer"`
+	Retention               Retention  `yaml:"retention"`
+	EvalTimeout             int        `yaml:"eval_timeout"`
+	BuildTimeout            int        `yaml:"build_timeout"`
+	BuildAttemptsLimit      int        `yaml:"build_attempts_limit"`
+	BuildRetryTimer         int        `yaml:"build_retry_timer"`
+	DeploymentAttemptsLimit int        `yaml:"deployment_attempts_limit"`
+	DeploymentRetryTimer    int        `yaml:"deployment_retry_timer"`
 }

@@ -44,6 +44,13 @@ type Deployer struct {
 	generationAvailableCh chan struct{}
 	postDeploymentCommand string
 
+	// The maximum number of attempts (including the first one)
+	// performed for a single deployment before reporting a failure. A value lower than or
+	// equal to 1 disables retries.
+	deploymentAttemptsLimit int
+	// The delay between two deployment attempts.
+	deploymentRetryTimerDuration time.Duration
+
 	isSuspended atomic.Bool
 	resumeCh    chan struct{}
 	// This is true when the runner is actually suspended. This is
@@ -118,17 +125,20 @@ func Show(s *protobuf.Deployer, padding string) {
 	showDeployment(padding, s.Deployment)
 }
 
-func New(store *store.Store, deployFunc DeployFunc, previousDeployment *protobuf.Deployment, postDeploymentCommand string, b *broker.Broker) *Deployer {
+func New(store *store.Store, deployFunc DeployFunc, previousDeployment *protobuf.Deployment, postDeploymentCommand string, b *broker.Broker, deploymentAttemptsLimit int, deploymentRetryTimer time.Duration) *Deployer {
 	if previousDeployment != nil {
 		logrus.Infof("deployer: initializing with previous deployment %s", previousDeployment.Uuid)
 	}
+	logrus.Infof("deployer: initialization with deploymentAttemptsLimit=%d, deploymentRetryTimer=%fs", deploymentAttemptsLimit, deploymentRetryTimer.Seconds())
 	deployer := &Deployer{
-		store:                 store,
-		DeploymentDoneCh:      make(chan *protobuf.Deployment, 1),
-		deployerFunc:          deployFunc,
-		generationAvailableCh: make(chan struct{}, 1),
-		postDeploymentCommand: postDeploymentCommand,
-		broker:                b,
+		store:                        store,
+		DeploymentDoneCh:             make(chan *protobuf.Deployment, 1),
+		deployerFunc:                 deployFunc,
+		generationAvailableCh:        make(chan struct{}, 1),
+		postDeploymentCommand:        postDeploymentCommand,
+		broker:                       b,
+		deploymentAttemptsLimit:      deploymentAttemptsLimit,
+		deploymentRetryTimerDuration: deploymentRetryTimer,
 
 		resumeCh: make(chan struct{}, 1),
 	}
@@ -209,6 +219,48 @@ func (d *Deployer) Submit(generation *protobuf.Generation, operation string, for
 	}
 }
 
+// deployWithRetry runs the deploy function, retrying it on failure
+// until it succeeds or the attempts limit is reached. It returns the
+// result of the last attempt.
+func (d *Deployer) deployWithRetry(ctx context.Context, generationUUID, outPath, operation string, profilePaths []string) (bool, string, error) {
+	// The attempts limit is the total number of attempts
+	// (including the first one).
+	attemptsLimit := d.deploymentAttemptsLimit
+	if attemptsLimit < 1 {
+		attemptsLimit = 1
+	}
+	var cominNeedRestart bool
+	var profilePath string
+	var err error
+	for attempt := 1; ; attempt++ {
+		stdout, stderr := d.broker.GetLogger("deployment", generationUUID)
+		if attempt > 1 {
+			logrus.Infof("deployer: retrying deployment of generation %s (attempt %d/%d)", generationUUID, attempt, attemptsLimit)
+		}
+		cominNeedRestart, profilePath, err = d.deployerFunc(
+			ctx,
+			outPath,
+			operation,
+			profilePaths,
+			stdout,
+			stderr,
+		)
+		// We close the writers to stop associated goroutines
+		_ = stdout.Close()
+		_ = stderr.Close()
+		if err == nil || attempt >= attemptsLimit {
+			break
+		}
+		logrus.Infof("deployer: deployment of generation %s failed (attempt %d/%d), retrying in %fs: %s", generationUUID, attempt, attemptsLimit, d.deploymentRetryTimerDuration.Seconds(), err)
+		select {
+		case <-ctx.Done():
+			return cominNeedRestart, profilePath, err
+		case <-time.After(d.deploymentRetryTimerDuration):
+		}
+	}
+	return cominNeedRestart, profilePath, err
+}
+
 func (d *Deployer) Run(ctx context.Context) {
 	go func() {
 		for {
@@ -243,18 +295,7 @@ func (d *Deployer) Run(ctx context.Context) {
 			}
 			if operationComputed != types.OperationNull {
 				profilePaths := d.store.GetDeploymentProfilePaths()
-				stdout, stderr := d.broker.GetLogger("deployment", g.Uuid)
-				cominNeedRestart, profilePath, err = d.deployerFunc(
-					ctx,
-					g.OutPath,
-					operationComputed,
-					profilePaths,
-					stdout,
-					stderr,
-				)
-				// We close the writers to stop associated goroutines
-				_ = stdout.Close()
-				_ = stderr.Close()
+				cominNeedRestart, profilePath, err = d.deployWithRetry(ctx, g.Uuid, g.OutPath, operationComputed, profilePaths)
 			}
 			deployment := d.Deployment()
 			deployment.EndedAt = timestamppb.New(time.Now().UTC())

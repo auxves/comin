@@ -1,8 +1,7 @@
-{
-  config,
-  pkgs,
-  lib,
-  ...
+{ config
+, pkgs
+, lib
+, ...
 }:
 let
   cfg = config.services.comin;
@@ -120,6 +119,23 @@ in
           default = 30;
           description = ''
             Duration in seconds between each build retry attempt.
+          '';
+        };
+        deploymentAttemptsLimit = mkOption {
+          type = int;
+          default = 2;
+          description = ''
+            Maximum number of deployment attempts (including the first
+            one) before comin reports a deployment failure. When set to
+            a value lower than or equal to 1, comin does not retry
+            failed deployments.
+          '';
+        };
+        deploymentRetryTimer = mkOption {
+          type = int;
+          default = 30;
+          description = ''
+            Duration in seconds between each deployment retry attempt.
           '';
         };
         exporter = mkOption {
