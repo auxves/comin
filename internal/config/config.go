@@ -81,6 +81,12 @@ func Read(path string) (config types.Configuration, err error) {
 	if config.BuildRetryTimer == 0 {
 		config.BuildRetryTimer = 30
 	}
+	if config.DeploymentAttemptsLimit == 0 {
+		config.DeploymentAttemptsLimit = 2
+	}
+	if config.DeploymentRetryTimer == 0 {
+		config.DeploymentRetryTimer = 30
+	}
 	logrus.Debugf("Config is '%#v'", config)
 	return
 }

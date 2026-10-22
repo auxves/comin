@@ -33,7 +33,7 @@ var mkDeployerMock = func(t *testing.T) *deployer.Deployer {
 
 	s, err := store.New(bk, tmp+"/state.json", tmp+"/gcroots", 1, 1, 1)
 	assert.Nil(t, err)
-	return deployer.New(s, deployFunc, nil, "", bk)
+	return deployer.New(s, deployFunc, nil, "", bk, 2, 100*time.Millisecond)
 }
 
 type ExecutorMock struct {
@@ -95,7 +95,7 @@ func TestBuild(t *testing.T) {
 	var deployFunc = func(context.Context, string, string, []string, io.WriteCloser, io.WriteCloser) (bool, string, error) {
 		return false, "profile-path", nil
 	}
-	d := deployer.New(s, deployFunc, nil, "", bk)
+	d := deployer.New(s, deployFunc, nil, "", bk, 2, 100*time.Millisecond)
 	e, _ := executor.NewGitNixFlakeNixOS("", false)
 	bc := NewConfirmer(bk, Without, 0, "")
 	bc.Start()
@@ -209,7 +209,7 @@ func TestDeploy(t *testing.T) {
 	var deployFunc = func(context.Context, string, string, []string, io.WriteCloser, io.WriteCloser) (bool, string, error) {
 		return false, "profile-path", nil
 	}
-	d := deployer.New(s, deployFunc, nil, "", bk)
+	d := deployer.New(s, deployFunc, nil, "", bk, 2, 100*time.Millisecond)
 	e, _ := executor.NewGitNixFlakeNixOS("", false)
 	bc := NewConfirmer(bk, Without, 0, "")
 	bc.Start()

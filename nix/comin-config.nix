@@ -1,8 +1,7 @@
-{
-  config,
-  pkgs,
-  lib,
-  ...
+{ config
+, pkgs
+, lib
+, ...
 }:
 let
   cfg = config;
@@ -27,6 +26,10 @@ rec {
     retention = cfg.services.comin.retention;
     eval_timeout = cfg.services.comin.evalTimeout;
     build_timeout = cfg.services.comin.buildTimeout;
+    build_attempts_limit = cfg.services.comin.buildAttemptsLimit;
+    build_retry_timer = cfg.services.comin.buildRetryTimer;
+    deployment_attempts_limit = cfg.services.comin.deploymentAttemptsLimit;
+    deployment_retry_timer = cfg.services.comin.deploymentRetryTimer;
   }
   // (lib.optionalAttrs (cfg.services.comin.sshAllowedSignersPath != null) {
     ssh_allowed_signers_path = cfg.services.comin.sshAllowedSignersPath;

@@ -57,9 +57,11 @@ func TestConfig(t *testing.T) {
 		Grpc: types.Grpc{
 			UnixSocketPath: "/var/lib/comin/grpc.sock",
 		},
-		EvalTimeout:    1800,
-		BuildTimeout:   1800,
-		BuildRetryTimer: 30,
+		EvalTimeout:             1800,
+		BuildTimeout:            1800,
+		BuildRetryTimer:         30,
+		DeploymentAttemptsLimit: 2,
+		DeploymentRetryTimer:    30,
 	}
 	config, err := Read(configPath)
 	assert.Nil(t, err)
