@@ -178,17 +178,17 @@ func (d *Deployer) Resume() {
 }
 
 func (d *Deployer) IsAlreadyDeployed(generation *protobuf.Generation, operation string) bool {
-	previous := d.previousDeployment.Load()
-	if previous == nil {
-		logrus.Infof("deployer: no previous deployment found for generation %s", generation.Uuid)
+	current := d.deployment.Load()
+	if current == nil {
+		logrus.Infof("deployer: no current deployment found for generation %s", generation.Uuid)
 		return false
 	}
-	if generation.OutPath != previous.Generation.OutPath {
-		logrus.Infof("deployer: out path %s differs from previous out path %s for generation %s", generation.OutPath, previous.Generation.OutPath, generation.Uuid)
+	if generation.OutPath != current.Generation.OutPath {
+		logrus.Infof("deployer: out path %s differs from current out path %s for generation %s", generation.OutPath, current.Generation.OutPath, generation.Uuid)
 		return false
 	}
-	if previous.Operation != operation {
-		logrus.Infof("deployer: operation %s differs from previous operation %s for generation %s", operation, previous.Operation, generation.Uuid)
+	if current.Operation != operation {
+		logrus.Infof("deployer: operation %s differs from current operation %s for generation %s", operation, current.Operation, generation.Uuid)
 		return false
 	}
 	logrus.Infof("deployer: skipping deployment of generation %s: out path %s with operation %s has already been deployed", generation.Uuid, generation.OutPath, operation)
