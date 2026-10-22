@@ -76,6 +76,8 @@ func TestDeployerSubmit(t *testing.T) {
 	assert.False(t, d.IsDeploying())
 
 	d.Submit(&protobuf.Generation{
+		Uuid:    "gen-1",
+		OutPath: "/nix/store/out-1",
 		Source: &protobuf.Source{
 			Source: &protobuf.Source_Git{
 				Git: &protobuf.Git{
@@ -90,6 +92,8 @@ func TestDeployerSubmit(t *testing.T) {
 	}, 5*time.Second, 100*time.Millisecond)
 
 	d.Submit(&protobuf.Generation{
+		Uuid:    "gen-2",
+		OutPath: "/nix/store/out-2",
 		Source: &protobuf.Source{
 			Source: &protobuf.Source_Git{
 				Git: &protobuf.Git{
@@ -99,6 +103,8 @@ func TestDeployerSubmit(t *testing.T) {
 		},
 	}, "test", false, "")
 	d.Submit(&protobuf.Generation{
+		Uuid:    "gen-3",
+		OutPath: "/nix/store/out-3",
 		Source: &protobuf.Source{
 			Source: &protobuf.Source_Git{
 				Git: &protobuf.Git{
@@ -243,4 +249,60 @@ func TestDeployerRetryRespectsAttemptsLimit(t *testing.T) {
 
 	// No additional attempt should have been performed
 	assert.Equal(t, int32(3), attempts.Load(), "deployment should be attempted exactly 3 times")
+}
+
+func TestIsAlreadyDeployedResetTestingToMain(t *testing.T) {
+	tmp := t.TempDir()
+	bk := broker.New()
+	bk.Start()
+
+	s, err := store.New(bk, tmp+"/state.json", tmp+"/gcroots", 1, 1, 1)
+	assert.Nil(t, err)
+	d := New(s, nil, nil, "", bk, 1, 50*time.Millisecond)
+
+	mainOutPath := "/nix/store/main-outpath"
+	testingOutPath := "/nix/store/testing-outpath"
+
+	mainDeployment := &protobuf.Deployment{
+		Uuid:      "main-dpl",
+		Operation: "switch",
+		Generation: &protobuf.Generation{
+			Uuid:    "gen-main",
+			OutPath: mainOutPath,
+		},
+	}
+	testingDeployment := &protobuf.Deployment{
+		Uuid:      "testing-dpl",
+		Operation: "test",
+		Generation: &protobuf.Generation{
+			Uuid:    "gen-testing",
+			OutPath: testingOutPath,
+		},
+	}
+	// Simulate history: main deployed, then testing deployed on top.
+	d.previousDeployment.Store(mainDeployment)
+	d.deployment.Store(testingDeployment)
+
+	// Testing force-pushed to match main: same OutPath as main, switch
+	// operation. It differs from the current (testing) deployment and
+	// must NOT be skipped, even though it matches the previous deployment.
+	resetGeneration := &protobuf.Generation{
+		Uuid:    "gen-main-again",
+		OutPath: mainOutPath,
+	}
+	assert.False(t, d.IsAlreadyDeployed(resetGeneration, "switch"))
+
+	// Same OutPath and operation as the current deployment must still be skipped.
+	sameAsCurrent := &protobuf.Generation{
+		Uuid:    "gen-testing-again",
+		OutPath: testingOutPath,
+	}
+	assert.True(t, d.IsAlreadyDeployed(sameAsCurrent, "test"))
+
+	// Same OutPath but different operation must redeploy.
+	assert.False(t, d.IsAlreadyDeployed(sameAsCurrent, "switch"))
+
+	// No current deployment must not skip.
+	empty := New(s, nil, nil, "", bk, 1, 50*time.Millisecond)
+	assert.False(t, empty.IsAlreadyDeployed(resetGeneration, "switch"))
 }
